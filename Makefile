@@ -19,7 +19,7 @@ DCOMPILE_FLAGS = -D DEBUG
 # Add additional include paths
 INCLUDES = -I $(INC_PATH)
 # General linker settings
-LINK_FLAGS = -lsfml-graphics -lsfml-window -lsfml-system
+LINK_FLAGS = -lsfml-graphics -lsfml-window -lsfml-system -lpthread
 # Additional release-specific linker settings
 RLINK_FLAGS =
 # Additional debug-specific linker settings

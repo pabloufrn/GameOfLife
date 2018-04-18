@@ -1,57 +1,86 @@
 #include <SFML/Graphics.hpp>
-#include <cmath>
 #include <iostream>
-#include <fstream>
-#include <cstring>
-#include "quadboard.h"
+#include <chrono>
+#include <thread>
+#include <functional>
+#include "life.h"
 #include "button.h"
-QuadBoard *board;
-int rows;
-int cols;
-const int size = 20;
-const int margin = 2;
+Life *game;
+int gen = 0;
+sf::Text text; // iteration count text
 void clear_board()
 {
-    (*board).clear();
+    game->board->clear();
 }
 void reset_board()
 {
-    (*board).reset();
+    game->board->reset();
 }
-bool readConfig(std::string file_name){
-    std::ifstream file;
-    file.open(file_name);
-	char c_alive;
-    char c;
-	file >> rows >> cols >> c_alive;
-    board = new QuadBoard(size, cols, rows, margin, sf::Color::Green);
-    for(int i = 0; i < rows; ++i)
-        for(int j = 0; j < cols; ++j){
-            file >> c;
-            if(c == c_alive)
-                (*board).set_active(i, j);
+void update()
+{
+    if(!game->board->is_disable())
+        return;
+    game->update();
+}
+void start()
+{
+    std::function<void(void)> func = update;
+    unsigned int interval = 1000;
+    if(game->board->is_disable())
+        return;
+    game->board->disable();
+    game->load_from_board();
+    std::thread([func, interval]() {
+        while (game->board->is_disable())
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+            func();
+            if(game->is_extinct()){
+                text.setString("Extinct at gen " + std::to_string(gen));
+                break;
+            }
+            if(game->is_stable()){
+                text.setString("Stable at gen " + std::to_string(gen));
+                break;
+            }
+            gen++;
+            text.setString("Generation: " + std::to_string(gen));
         }
-    (*board).backup();
-    return true;
+    }).detach();
+    return;
 }
+void stop()
+{
+    if(!game->board->is_disable())
+        return;
+    gen = 0;
+    game->clear_ids();
+    game->board->enable();
+    game->board->reset();
+    return;
+}
+
 int main()
 {
     // load config
-    if(!readConfig("data/cfg1.dat"))return 1;
+    game = new Life("data/cfg1.dat");
+    int rows = game->get_rows();
+    int cols = game->get_columns();
+    size_t margin = game->board->get_margin();
+    size_t size = game->board->get_quad_size();
     // general variables
     size_t window_width = cols*size+cols*margin;
     size_t window_height = rows*size+rows*margin+80;
     // window elements
-    sf::Text text; // iteration count
     sf::Font font;
     font.loadFromFile("font/arial.ttf");
     text.setFont(font);
     text.setFillColor(sf::Color::White);
     text.setCharacterSize(20);
     text.setPosition(10, window_height-75);
-    text.setString("Interation: 0");
-    Button bt("Start", sf::Vector2f(10, window_height-40), 25, nullptr);
-    Button bt2("Stop", sf::Vector2f(bt.getRightX() + 10, window_height-40), 25, nullptr);
+    text.setString("Generation: 0");
+    Button bt("Start", sf::Vector2f(10, window_height-40), 25, &start);
+    Button bt2("Stop", sf::Vector2f(bt.getRightX() + 10, window_height-40), 25, &stop);
     if(bt2.getRightX() > window_width + 2)
     {
         window_height += 35;
@@ -69,8 +98,6 @@ int main()
         window_height += 35;
         bt4.move(-bt3.getRightX(), 35);
     }
-    //start_interation();
-    // create a thread to update grid
     // window config
 	sf::RenderWindow window(sf::VideoMode(window_width, window_height), "John Conway's Game of Life", sf::Style::Titlebar + sf::Style::Close);
 	while (window.isOpen())
@@ -87,13 +114,13 @@ int main()
                     break;
             }
 		}
-		(*board).update(e);
+		(*game->board).update(e);
         bt.update(e);
         bt2.update(e);
         bt3.update(e);
         bt4.update(e);
 		window.clear();
-        window.draw(*board);
+        window.draw(*game->board);
         window.draw(text);
         window.draw(bt);
         window.draw(bt2);
@@ -101,6 +128,5 @@ int main()
         window.draw(bt4);
 		window.display();
 	}
-	delete board;
 	return 0;
 }
