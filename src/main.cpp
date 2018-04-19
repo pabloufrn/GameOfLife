@@ -18,8 +18,6 @@ void reset_board()
 }
 void update()
 {
-    if(!game->board->is_disable())
-        return;
     game->update();
 }
 void start()
@@ -43,6 +41,8 @@ void start()
                 text.setString("Stable at gen " + std::to_string(gen));
                 break;
             }
+            if(!game->board->is_disable()) // extra verification, cause the stop button may be pressed
+                break;
             gen++;
             text.setString("Generation: " + std::to_string(gen));
         }
@@ -53,17 +53,33 @@ void stop()
 {
     if(!game->board->is_disable())
         return;
-    gen = 0;
     game->clear_ids();
     game->board->enable();
     game->board->reset();
+    text.setString("Generation: 0");
+    gen = 0;
     return;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    if(argc < 2){
+		std::cout << "Wrong syntaxe!\n"
+			<< "Use: life <input_cfg_file> [<output_cfg_evolution_file>]" << std::endl;
+		return 0;
+    }
+    if(argv[1][0] == '-' and argv[1][1] == 's')
+    {
+        std::string::size_type sz;
+        int cols = std::stoi(argv[2], &sz);
+        int rows = std::stoi(argv[3], &sz);
+        game = new Life(rows, cols);
+    }
+    else {
+            game = new Life(argv[1]);
+    }
     // load config
-    game = new Life("data/cfg1.dat");
+    
     int rows = game->get_rows();
     int cols = game->get_columns();
     size_t margin = game->board->get_margin();

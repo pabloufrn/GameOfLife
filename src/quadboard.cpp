@@ -16,8 +16,8 @@ QuadBoard::QuadBoard(size_t quad_size, size_t width, size_t height, size_t margi
     m_o_vertices.setPrimitiveType(sf::Quads);
     m_o_vertices.resize(width * height * 4);
     // populate the vertex array
-    for (unsigned int i = 0; i < width; ++i)
-        for (unsigned int j = 0; j < height; ++j)
+    for (unsigned int i = 0; i < height; ++i)
+        for (unsigned int j = 0; j < width; ++j)
         {
             // get a pointer to the current board's quad
             int index = (i * width + j) * 4;

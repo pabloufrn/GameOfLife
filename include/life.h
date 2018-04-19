@@ -48,6 +48,8 @@ class Life {
     bool is_stable();
     void clear_ids();
     void set_id();
+    void bordas();
+    void load_bordas();
     void save_file(std::string filename);
 };
 #endif
